@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ShoppingBag, Search, User, Menu, X, Mail } from 'lucide-react';
+import { ShoppingBag, Search, Menu, X, Mail, ArrowLeft } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useShop } from '../context/ShopContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { SiTiktok } from 'react-icons/si';
 import { FaInstagram, FaYoutube, FaFacebookF, FaLinkedinIn, FaTelegramPlane } from 'react-icons/fa';
 import { Product } from '../data/products';
 import logoImage from '../assets/yoseph-logo.png';
+import { useStudioCategory, STUDIO_CATEGORIES } from '../context/StudioCategoryContext';
 
 const socialLinks = [
   { name: "TikTok", icon: SiTiktok, href: "#" },
@@ -25,6 +26,9 @@ interface HeaderProps {
 }
 
 export const Header = ({ onOpenCart, onSelectProduct }: HeaderProps) => {
+  const location = useLocation();
+  const isStudioPage = location.pathname === '/studio';
+  const { setSelectedCategory } = useStudioCategory();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -201,20 +205,30 @@ export const Header = ({ onOpenCart, onSelectProduct }: HeaderProps) => {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            {/* Mobile Search Toggle */}
+            {/* Mobile Search Toggle - home: search; studio: same navbar, search still available */}
             <button 
-              className="sm:hidden p-2 text-neutral-600 hover:text-black"
+              className="sm:hidden p-2 text-neutral-600 hover:text-black transition-colors"
               onClick={() => setIsSearchOpen(!isSearchOpen)}
             >
               <Search size={20} />
             </button>
-            {/* Studio page */}
-           <Link
-              to="/studio"
-             className="p-2 text-neutral-600 hover:text-amber-500 transition-colors"
-            >
-              Studio
-            </Link>
+            {/* Studio page: Back to Home; Home: link to Studio */}
+            {isStudioPage ? (
+              <Link
+                to="/"
+                className="p-2 text-neutral-600 hover:text-amber-500 transition-colors inline-flex items-center gap-1.5 text-sm font-medium"
+              >
+                <ArrowLeft size={18} />
+                <span className="hidden sm:inline">Back to Home</span>
+              </Link>
+            ) : (
+              <Link
+                to="/studio"
+                className="p-2 text-neutral-600 hover:text-amber-500 transition-colors"
+              >
+                Studio
+              </Link>
+            )}
             <button 
               onClick={onOpenCart}
               className="p-2 text-neutral-600 hover:text-black relative"
@@ -291,7 +305,7 @@ export const Header = ({ onOpenCart, onSelectProduct }: HeaderProps) => {
         </AnimatePresence>
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation - Studio: studio categories; Home: home categories */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
@@ -303,12 +317,30 @@ export const Header = ({ onOpenCart, onSelectProduct }: HeaderProps) => {
           >
             <div className="px-4 py-6 space-y-4">
               <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-neutral-400 mb-2">Categories</p>
-              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Living</a>
-              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Bedroom</a>
-              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Dining</a>
-              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Office</a>
-              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Outdoor</a>
-              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Decor</a>
+              {isStudioPage ? (
+                STUDIO_CATEGORIES.map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(category.id);
+                      setIsMenuOpen(false);
+                    }}
+                    className="block w-full text-left text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors"
+                  >
+                    {category.name}
+                  </button>
+                ))
+              ) : (
+                <>
+                  <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Living</a>
+                  <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Bedroom</a>
+                  <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Dining</a>
+                  <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Office</a>
+                  <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Outdoor</a>
+                  <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Decor</a>
+                </>
+              )}
             </div>
           </motion.div>
         )}

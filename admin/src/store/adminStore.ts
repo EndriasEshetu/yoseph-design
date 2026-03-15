@@ -5,15 +5,33 @@ import { useAdminAuthStore } from './adminAuthStore';
 
 const API_URL = 'http://localhost:4000';
 
+export type ModelFormat = 'RVT' | 'FBX' | 'OBJ' | 'SKP' | '3DS' | 'DWG';
+
+export interface StudioModel {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  format: ModelFormat;
+  category: string;
+  image: string;
+  featured?: boolean;
+}
+
 interface AdminState {
   products: Product[];
   orders: Order[];
+  studioModels: StudioModel[];
   loading: boolean;
   fetchProducts: () => Promise<void>;
   fetchOrders: () => Promise<void>;
+  fetchStudioModels: () => Promise<void>;
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
   updateProduct: (product: Product) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
+  addStudioModel: (model: Omit<StudioModel, 'id'>) => Promise<void>;
+  updateStudioModel: (model: StudioModel) => Promise<void>;
+  deleteStudioModel: (id: string) => Promise<void>;
   updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
 }
 
@@ -35,6 +53,7 @@ const handleAuthError = (res: Response) => {
 export const useAdminStore = create<AdminState>((set) => ({
   products: [],
   orders: [],
+  studioModels: [],
   loading: false,
 
   fetchProducts: async () => {
@@ -70,6 +89,21 @@ export const useAdminStore = create<AdminState>((set) => ({
       }
     } catch (error) {
       console.error('Failed to fetch orders:', error);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  fetchStudioModels: async () => {
+    try {
+      set({ loading: true });
+      const res = await fetch(`${API_URL}/api/studio-models`);
+      if (res.ok) {
+        const studioModels = await res.json();
+        set({ studioModels });
+      }
+    } catch (error) {
+      console.error('Failed to fetch studio models:', error);
     } finally {
       set({ loading: false });
     }
@@ -136,6 +170,53 @@ export const useAdminStore = create<AdminState>((set) => ({
     
     set((state) => ({
       products: state.products.filter((p) => p.id !== id),
+    }));
+  },
+
+  addStudioModel: async (model) => {
+    const res = await fetch(`${API_URL}/api/studio-models`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(model),
+    });
+    if (res.status === 401) {
+      handleAuthError(res);
+      return;
+    }
+    if (!res.ok) throw new Error('Failed to add studio model');
+    const newModel = await res.json();
+    set((state) => ({ studioModels: [...state.studioModels, newModel] }));
+  },
+
+  updateStudioModel: async (model) => {
+    const res = await fetch(`${API_URL}/api/studio-models/${model.id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(model),
+    });
+    if (res.status === 401) {
+      handleAuthError(res);
+      return;
+    }
+    if (!res.ok) throw new Error('Failed to update studio model');
+    const updated = await res.json();
+    set((state) => ({
+      studioModels: state.studioModels.map((m) => (m.id === model.id ? updated : m)),
+    }));
+  },
+
+  deleteStudioModel: async (id) => {
+    const res = await fetch(`${API_URL}/api/studio-models/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (res.status === 401) {
+      handleAuthError(res);
+      return;
+    }
+    if (!res.ok) throw new Error('Failed to delete studio model');
+    set((state) => ({
+      studioModels: state.studioModels.filter((m) => m.id !== id),
     }));
   },
 

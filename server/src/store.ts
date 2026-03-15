@@ -1,6 +1,7 @@
 import { Product, PRODUCTS } from "./data/products";
+import { StudioModel, STUDIO_MODELS } from "./data/studioModels";
 
-export type { Product };
+export type { Product, StudioModel };
 
 export type OrderStatus = "pending" | "processed" | "shipped" | "delivered" | "cancelled";
 
@@ -28,9 +29,10 @@ export interface Order {
 
 const products: Product[] = [...PRODUCTS];
 const orders: Order[] = [];
+const studioModels: StudioModel[] = [...STUDIO_MODELS];
 
 export function getProducts(): Product[] {
-  return [...products];
+  return [...products].reverse(); // newest first (recently added)
 }
 
 export function getProductById(id: string): Product | undefined {
@@ -79,4 +81,36 @@ export function updateOrderStatus(id: string, status: OrderStatus): Order | unde
   if (!o) return undefined;
   o.status = status;
   return o;
+}
+
+// Studio models (3D models for Studio page)
+export function getStudioModels(): StudioModel[] {
+  return [...studioModels].reverse(); // newest first (recently added)
+}
+
+export function getStudioModelById(id: string): StudioModel | undefined {
+  return studioModels.find((m) => m.id === id);
+}
+
+export function addStudioModel(m: Omit<StudioModel, "id">): StudioModel {
+  const newModel: StudioModel = {
+    ...m,
+    id: `sm-${Math.random().toString(36).substring(2, 9)}`,
+  };
+  studioModels.push(newModel);
+  return newModel;
+}
+
+export function updateStudioModel(id: string, m: Partial<StudioModel>): StudioModel | undefined {
+  const i = studioModels.findIndex((x) => x.id === id);
+  if (i === -1) return undefined;
+  studioModels[i] = { ...studioModels[i], ...m };
+  return studioModels[i];
+}
+
+export function deleteStudioModel(id: string): boolean {
+  const i = studioModels.findIndex((x) => x.id === id);
+  if (i === -1) return false;
+  studioModels.splice(i, 1);
+  return true;
 }

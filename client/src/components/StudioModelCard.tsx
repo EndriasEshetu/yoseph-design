@@ -1,8 +1,11 @@
+import { useState, useRef, useCallback } from 'react';
 import { Plus, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCart } from '../context/CartContext';
 import { Product } from '../data/products';
 import { StudioModel } from '../data/studioModels';
+
+const ZOOM_SCALE = 1.8;
 
 interface StudioModelCardProps {
   model: StudioModel;
@@ -23,6 +26,18 @@ function modelToCartProduct(model: StudioModel): Product {
 
 export const StudioModelCard = ({ model, onViewDetails }: StudioModelCardProps) => {
   const { addItem } = useCart();
+  const [origin, setOrigin] = useState({ x: 50, y: 50 });
+  const [isHovering, setIsHovering] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setOrigin({ x, y });
+  }, []);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -35,13 +50,23 @@ export const StudioModelCard = ({ model, onViewDetails }: StudioModelCardProps) 
 
   return (
     <div className="group relative">
-      <div className="aspect-[4/5] overflow-hidden bg-neutral-100 mb-4 relative">
+      <div
+        ref={containerRef}
+        className="aspect-[4/5] overflow-hidden bg-neutral-100 mb-4 relative"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+        onMouseMove={handleMouseMove}
+      >
         <img
           src={model.image}
           alt={model.name}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-300 ease-out"
+          style={{
+            transformOrigin: `${origin.x}% ${origin.y}%`,
+            transform: isHovering ? `scale(${ZOOM_SCALE})` : 'scale(1)',
+          }}
         />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none [&_button]:pointer-events-auto">
           <div className="flex gap-2">
             <button
               onClick={handleAddToCart}

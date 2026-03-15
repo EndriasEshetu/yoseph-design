@@ -1,10 +1,51 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, ShoppingBag, Minus, Plus } from 'lucide-react';
+import { X, ShoppingBag, Minus, Plus, Mail } from 'lucide-react';
+import { FaFacebookF, FaLinkedinIn, FaTelegramPlane, FaInstagram } from 'react-icons/fa';
+import { SiTiktok } from 'react-icons/si';
 import { Product } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const shareLinks = [
+  { name: 'Facebook', icon: FaFacebookF, type: 'facebook' as const },
+  { name: 'LinkedIn', icon: FaLinkedinIn, type: 'linkedin' as const },
+  { name: 'Telegram', icon: FaTelegramPlane, type: 'telegram' as const },
+  { name: 'TikTok', icon: SiTiktok, type: 'tiktok' as const },
+  { name: 'Instagram', icon: FaInstagram, type: 'instagram' as const },
+  { name: 'Email', icon: Mail, type: 'email' as const },
+];
+
+function getShareUrl(
+  type: (typeof shareLinks)[number]['type'],
+  product: Product,
+  shareUrl: string,
+  shareText: string
+): string {
+  const encodedUrl = encodeURIComponent(shareUrl);
+  const encodedText = encodeURIComponent(shareText);
+  const truncatedText = shareText.slice(0, 200) + (shareText.length > 200 ? '…' : '');
+  const encodedTruncated = encodeURIComponent(truncatedText);
+  const fullBody = `${product.name}\n\n${product.description}\n\nImage: ${product.image}\n\n${shareUrl}`;
+
+  switch (type) {
+    case 'facebook':
+      return `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+    case 'linkedin':
+      return `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+    case 'telegram':
+      return `https://t.me/share/url?url=${encodedUrl}&text=${encodedTruncated}`;
+    case 'tiktok':
+      return `https://www.tiktok.com/share?url=${encodedUrl}&text=${encodedTruncated}`;
+    case 'instagram':
+      return shareUrl;
+    case 'email':
+      return `mailto:?subject=${encodeURIComponent(product.name)}&body=${encodeURIComponent(fullBody)}`;
+    default:
+      return shareUrl;
+  }
+}
 
 interface ProductDetailProps {
   product: Product | null;
@@ -15,6 +56,10 @@ interface ProductDetailProps {
 export const ProductDetail = ({ product, isOpen, onClose }: ProductDetailProps) => {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
+  // Main image first, then additional images; main section shows selected, thumbnails show all
+  const allImages = product ? [product.image, ...(product.images ?? [])] : [];
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const mainImage = allImages[selectedImageIndex] ?? '';
 
   if (!product) return null;
 
@@ -30,8 +75,23 @@ export const ProductDetail = ({ product, isOpen, onClose }: ProductDetailProps) 
   const incrementQuantity = () => setQuantity(prev => Math.min(prev + 1, 10));
   const decrementQuantity = () => setQuantity(prev => Math.max(prev - 1, 1));
 
+  const handleShare = (type: (typeof shareLinks)[number]['type']) => {
+    const shareUrl =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/?product=${encodeURIComponent(product.id)}`
+        : '';
+    const shareText = `${product.name} — ${product.description}`;
+    const url = getShareUrl(type, product, shareUrl, shareText);
+    if (type === 'email') {
+      window.location.href = url;
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer,width=600,height=500');
+    }
+    toast.success(`Share via ${shareLinks.find((s) => s.type === type)?.name ?? type}`);
+  };
+
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) { setQuantity(1); onClose(); } }}>
+    <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) { setQuantity(1); setSelectedImageIndex(0); onClose(); } }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120]" />
         <AnimatePresence>
@@ -56,7 +116,7 @@ export const ProductDetail = ({ product, isOpen, onClose }: ProductDetailProps) 
                   {/* Image Section */}
                   <div className="relative w-full sm:flex-1 h-56 sm:h-auto sm:min-h-[500px] bg-neutral-100 shrink-0">
                     <img 
-                      src={product.image} 
+                      src={mainImage} 
                       alt={product.name} 
                       className="w-full h-full object-cover"
                     />
@@ -89,13 +149,28 @@ export const ProductDetail = ({ product, isOpen, onClose }: ProductDetailProps) 
                         {product.description}
                       </p>
 
-                      {/* Color Options */}
+                      {/* Main image + Additional images thumbnails */}
                       <div className="mb-6">
-                        <p className="text-xs font-semibold uppercase tracking-wider mb-3">Color</p>
-                        <div className="flex gap-2">
-                          <button className="w-8 h-8 rounded-full bg-black ring-2 ring-offset-2 ring-black" />
-                          <button className="w-8 h-8 rounded-full bg-neutral-300 hover:ring-2 hover:ring-offset-2 hover:ring-neutral-300 transition-all" />
-                          <button className="w-8 h-8 rounded-full bg-stone-500 hover:ring-2 hover:ring-offset-2 hover:ring-stone-500 transition-all" />
+                        <p className="text-xs font-semibold uppercase tracking-wider mb-3">Additional images</p>
+                        <div className="flex gap-2 flex-wrap">
+                          {allImages.map((img, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => setSelectedImageIndex(index)}
+                              className={`w-14 h-14 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${
+                                selectedImageIndex === index
+                                  ? 'border-amber-500 ring-2 ring-amber-200'
+                                  : 'border-neutral-200 hover:border-neutral-300'
+                              }`}
+                            >
+                              <img
+                                src={img}
+                                alt={index === 0 ? product.name : `${product.name} view ${index}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </button>
+                          ))}
                         </div>
                       </div>
 
@@ -144,6 +219,28 @@ export const ProductDetail = ({ product, isOpen, onClose }: ProductDetailProps) 
                           <p className="text-xs text-neutral-600">2-4 Business Days</p>
                         </div>
                       </div>
+                      {/* Share with friends */}
+                      <div className="mt-6 pt-6 border-t border-neutral-100">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-3">Share with friends</p>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {shareLinks.map((social) => (
+                            <a
+                              key={social.type}
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleShare(social.type);
+                              }}
+                              aria-label={`Share on ${social.name}`}
+                              className="w-10 h-10 rounded-full bg-neutral-100 text-neutral-600 flex items-center justify-center hover:bg-amber-500 hover:text-white transition-colors"
+                            >
+                              <social.icon size={18} />
+                            </a>
+                          ))}
+                        </div>
+                       
+                      </div>
+                     
                     </div>
                   </div>
                 </div>

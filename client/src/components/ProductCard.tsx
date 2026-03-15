@@ -1,15 +1,30 @@
-import React from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Product } from '../data/products';
 import { useCart } from '../context/CartContext';
-import { Plus, Info } from 'lucide-react';
+import { Plus, Info, Box } from 'lucide-react';
 import { toast } from 'sonner';
+
+const ZOOM_SCALE = 1.8;
 
 interface ProductCardProps {
   product: Product;
+  onGet3DModel?: (product: Product) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onGet3DModel }) => {
   const { addItem } = useCart();
+  const [origin, setOrigin] = useState({ x: 50, y: 50 });
+  const [isHovering, setIsHovering] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setOrigin({ x, y });
+  }, []);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -20,16 +35,31 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     });
   };
 
+  const handleGet3DModel = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onGet3DModel?.(product);
+  };
+
   return (
     <div className="group relative">
-      <div className="aspect-[4/5] overflow-hidden bg-neutral-100 mb-4 relative">
-        <img 
-          src={product.image} 
+      <div
+        ref={containerRef}
+        className="aspect-[4/5] overflow-hidden bg-neutral-100 mb-4 relative"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+        onMouseMove={handleMouseMove}
+      >
+        <img
+          src={product.image}
           alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-300 ease-out"
+          style={{
+            transformOrigin: `${origin.x}% ${origin.y}%`,
+            transform: isHovering ? `scale(${ZOOM_SCALE})` : 'scale(1)',
+          }}
         />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-           <div className="flex gap-2">
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none [&_button]:pointer-events-auto">
+           <div className="flex flex-wrap gap-2 justify-center p-2">
              <button 
                onClick={handleAddToCart}
                className="bg-white text-black p-3 hover:bg-neutral-900 hover:text-white transition-colors"
@@ -39,6 +69,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
              </button>
              <button className="bg-white text-black p-3 hover:bg-neutral-900 hover:text-white transition-colors" title="View Details">
                <Info size={20} />
+             </button>
+             <button 
+               onClick={handleGet3DModel}
+               className="bg-white text-black p-3 hover:bg-neutral-900 hover:text-white transition-colors flex items-center gap-1.5"
+               title="Get 3D model"
+             >
+               <Box size={20} />
+               <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">3D</span>
              </button>
            </div>
         </div>

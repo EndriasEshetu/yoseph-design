@@ -36,12 +36,15 @@ import { Upload, Link, X, Loader2, ImageIcon } from 'lucide-react';
 
 const API_URL = 'http://localhost:4000';
 
+const MAX_ADDITIONAL_IMAGES = 4;
+
 const productSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   price: z.number().min(0.01, 'Price must be greater than 0'),
   category: z.string().min(1, 'Please select a category'),
   image: z.string().url('Please enter a valid image URL'),
+  images: z.array(z.string().url()).max(MAX_ADDITIONAL_IMAGES).optional(),
   featured: z.boolean().optional(),
 });
 
@@ -60,7 +63,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
+  const [additionalImageUrl, setAdditionalImageUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const additionalFileInputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -70,11 +75,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
       price: 0,
       category: '',
       image: '',
+      images: [],
       featured: false,
     },
   });
 
   const imageUrl = form.watch('image');
+  const additionalImages = form.watch('images') ?? [];
 
   useEffect(() => {
     if (isOpen) {
@@ -85,6 +92,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
           price: product.price,
           category: product.category,
           image: product.image,
+          images: product.images ?? [],
           featured: product.featured || false,
         });
         setPreviewUrl(product.image);
@@ -95,6 +103,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
           price: 0,
           category: '',
           image: '',
+          images: [],
           featured: false,
         });
         setPreviewUrl('');
@@ -109,7 +118,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
     }
   }, [imageUrl, imageMode]);
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = async (file: File, forAdditional: boolean = false) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
@@ -120,15 +129,20 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
       return;
     }
 
+    const token = getToken();
+    if (!token) {
+      toast.error('Please log in to upload images');
+      return;
+    }
+
     setIsUploading(true);
     const localPreview = URL.createObjectURL(file);
-    setPreviewUrl(localPreview);
+    if (!forAdditional) setPreviewUrl(localPreview);
 
     try {
       const formData = new FormData();
       formData.append('image', file);
 
-      const token = getToken();
       const response = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         headers: {
@@ -140,27 +154,41 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 401) {
+          toast.error('Session expired. Please log out and log in again.');
+          return;
+        }
         throw new Error(data.message || data.error || 'Upload failed');
       }
 
-      form.setValue('image', data.url, { shouldValidate: true });
-      setPreviewUrl(data.url);
-      toast.success('Image uploaded successfully');
+      if (forAdditional) {
+        const current = form.getValues('images') ?? [];
+        if (current.length >= MAX_ADDITIONAL_IMAGES) {
+          toast.error(`Maximum ${MAX_ADDITIONAL_IMAGES} additional images allowed`);
+          return;
+        }
+        form.setValue('images', [...current, data.url], { shouldValidate: true });
+        toast.success('Additional image added');
+      } else {
+        form.setValue('image', data.url, { shouldValidate: true });
+        setPreviewUrl(data.url);
+        toast.success('Image uploaded successfully');
+      }
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error(error.message || 'Failed to upload image');
-      setPreviewUrl('');
+      if (!forAdditional) setPreviewUrl('');
     } finally {
       setIsUploading(false);
       URL.revokeObjectURL(localPreview);
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent, forAdditional?: boolean) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
-    if (file) handleFileUpload(file);
+    if (file) handleFileUpload(file, forAdditional);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -172,9 +200,30 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
     setIsDragging(false);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, forAdditional?: boolean) => {
     const file = e.target.files?.[0];
-    if (file) handleFileUpload(file);
+    if (file) handleFileUpload(file, forAdditional);
+    e.target.value = '';
+  };
+
+  const addAdditionalImageByUrl = (url: string) => {
+    const current = form.getValues('images') ?? [];
+    if (current.length >= MAX_ADDITIONAL_IMAGES) {
+      toast.error(`Maximum ${MAX_ADDITIONAL_IMAGES} additional images allowed`);
+      return;
+    }
+    try {
+      new URL(url);
+      form.setValue('images', [...current, url], { shouldValidate: true });
+      toast.success('Additional image added');
+    } catch {
+      toast.error('Please enter a valid image URL');
+    }
+  };
+
+  const removeAdditionalImage = (index: number) => {
+    const current = form.getValues('images') ?? [];
+    form.setValue('images', current.filter((_, i) => i !== index), { shouldValidate: true });
   };
 
   const clearImage = () => {
@@ -195,6 +244,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
           price: values.price,
           category: values.category,
           image: values.image,
+          images: values.images,
           featured: values.featured,
         });
         toast.success('Product updated successfully');
@@ -205,6 +255,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
           price: values.price,
           category: values.category,
           image: values.image,
+          images: values.images,
           featured: values.featured,
         });
         toast.success('Product created successfully');
@@ -273,12 +324,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Living">Living</SelectItem>
-                        <SelectItem value="Bedroom">Bedroom</SelectItem>
-                        <SelectItem value="Dining">Dining</SelectItem>
-                        <SelectItem value="Office">Office</SelectItem>
-                        <SelectItem value="Outdoor">Outdoor</SelectItem>
-                        <SelectItem value="Decor">Decor</SelectItem>
+                        <SelectItem value="LIVING">LIVING</SelectItem>
+                        <SelectItem value="BEDROOM">BEDROOM</SelectItem>
+                        <SelectItem value="DINING">DINING</SelectItem>
+                        <SelectItem value="OFFICE">OFFICE</SelectItem>
+                        <SelectItem value="OUTDOOR">OUTDOOR</SelectItem>
+                        <SelectItem value="DECOR">DECOR</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -421,6 +472,79 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
                 </FormItem>
               )}
             />
+
+            {/* Additional images (max 4) */}
+            <div className="space-y-3">
+              <FormLabel>Additional images (max {MAX_ADDITIONAL_IMAGES})</FormLabel>
+              <p className="text-xs text-muted-foreground">These appear as extra thumbnails on the product page. New images are added to the list.</p>
+              <div className="flex flex-wrap gap-2">
+                {additionalImages.map((url, index) => (
+                  <div key={index} className="relative group">
+                    <div className="w-20 h-20 rounded-lg overflow-hidden border border-neutral-200 bg-neutral-50">
+                      <img src={url} alt={`Additional ${index + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeAdditionalImage(index)}
+                      className="absolute -top-1 -right-1 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+                {additionalImages.length < MAX_ADDITIONAL_IMAGES && (
+                  <>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex gap-1">
+                        <Input
+                          placeholder="Image URL"
+                          value={additionalImageUrl}
+                          onChange={(e) => setAdditionalImageUrl(e.target.value)}
+                          className="w-36 h-9 text-sm"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-9"
+                          onClick={() => {
+                            if (additionalImageUrl.trim()) {
+                              addAdditionalImageByUrl(additionalImageUrl.trim());
+                              setAdditionalImageUrl('');
+                            }
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                      <input
+                        ref={additionalFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleFileSelect(e, true)}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-full flex items-center justify-center gap-1"
+                        onClick={() => additionalFileInputRef.current?.click()}
+                        disabled={isUploading}
+                      >
+                        <Upload size={14} />
+                        Upload
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+              <FormField
+                control={form.control as any}
+                name="images"
+                render={() => <FormMessage />}
+              />
+            </div>
 
             <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

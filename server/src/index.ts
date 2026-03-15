@@ -1,4 +1,5 @@
 import "dotenv/config";
+import crypto from "crypto";
 import express from "express";
 import cors from "cors";
 import multer from "multer";
@@ -12,9 +13,15 @@ import {
   getOrders,
   createOrder,
   updateOrderStatus,
+  getStudioModels,
+  getStudioModelById,
+  addStudioModel,
+  updateStudioModel,
+  deleteStudioModel,
   type Product,
   type Order,
   type OrderStatus,
+  type StudioModel,
 } from "./store";
 
 const app = express();
@@ -44,22 +51,38 @@ const upload = multer({
 });
 
 // Simple admin auth (demo only – use proper auth in production)
+// Stateless token so it remains valid after server restart
 const ADMIN_SECRET = "admin123";
-const adminTokens = new Set<string>();
+const ADMIN_EMAIL = "admin@example.com";
+
+function createAdminToken(): string {
+  const payload = `${ADMIN_EMAIL}:admin`;
+  return "admin-" + crypto.createHmac("sha256", ADMIN_SECRET).update(payload).digest("hex");
+}
+
+function isValidAdminToken(token: string): boolean {
+  if (!token || !token.startsWith("admin-")) return false;
+  const expected = createAdminToken();
+  if (token.length !== expected.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(token, "utf8"), Buffer.from(expected, "utf8"));
+  } catch {
+    return false;
+  }
+}
 
 app.post("/api/auth/login", (req, res) => {
   const { email, password } = req.body ?? {};
-  if (email === "admin@example.com" && password === ADMIN_SECRET) {
-    const token = `admin-${Date.now()}`;
-    adminTokens.add(token);
+  if (email === ADMIN_EMAIL && password === ADMIN_SECRET) {
+    const token = createAdminToken();
     return res.json({ token, user: { id: "1", email, role: "admin" } });
   }
   res.status(401).json({ error: "Invalid credentials" });
 });
 
 function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const token = req.headers.authorization?.replace("Bearer ", "");
-  if (!token || !adminTokens.has(token)) {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "").trim();
+  if (!token || !isValidAdminToken(token)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   next();
@@ -155,6 +178,35 @@ app.put("/api/orders/:id/status", requireAdmin, (req, res) => {
   const updated = updateOrderStatus(req.params.id, status);
   if (!updated) return res.status(404).json({ error: "Not found" });
   res.json(updated);
+});
+
+// Studio models (public read; admin write)
+app.get("/api/studio-models", (_req, res) => {
+  res.json(getStudioModels());
+});
+
+app.get("/api/studio-models/:id", (req, res) => {
+  const m = getStudioModelById(req.params.id);
+  if (!m) return res.status(404).json({ error: "Not found" });
+  res.json(m);
+});
+
+app.post("/api/studio-models", requireAdmin, (req, res) => {
+  const body = req.body as Omit<StudioModel, "id">;
+  const created = addStudioModel(body);
+  res.status(201).json(created);
+});
+
+app.put("/api/studio-models/:id", requireAdmin, (req, res) => {
+  const updated = updateStudioModel(req.params.id, req.body);
+  if (!updated) return res.status(404).json({ error: "Not found" });
+  res.json(updated);
+});
+
+app.delete("/api/studio-models/:id", requireAdmin, (req, res) => {
+  const ok = deleteStudioModel(req.params.id);
+  if (!ok) return res.status(404).json({ error: "Not found" });
+  res.status(204).send();
 });
 
 app.listen(PORT, () => {

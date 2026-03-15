@@ -5,6 +5,7 @@ import { AdminLogin } from './components/admin/AdminLogin';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { DashboardHome } from './components/admin/DashboardHome';
 import { ProductManagement } from './components/admin/ProductManagement';
+import { StudioManagement } from './components/admin/StudioManagement';
 import { OrderManagement } from './components/admin/OrderManagement';
 import { ProtectedRoute } from './components/admin/ProtectedRoute';
 import { useAdminAuthStore } from './store/adminAuthStore';
@@ -46,6 +47,7 @@ function App() {
         >
           <Route index element={<DashboardHome />} />
           <Route path="products" element={<ProductManagement />} />
+          <Route path="studio" element={<StudioManagement />} />
           <Route path="orders" element={<OrderManagement />} />
           <Route path="settings" element={<div className="flex items-center justify-center h-[60vh] text-neutral-400 italic font-medium">Settings — Coming soon</div>} />
         </Route>

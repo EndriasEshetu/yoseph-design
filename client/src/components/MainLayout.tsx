@@ -11,6 +11,7 @@ import { ProductDetail } from './ProductDetail';
 import { CartProvider } from '../context/CartContext';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Product } from '../data/products';
+import { ProductShareMeta } from './ProductShareMeta';
 
 export const MainLayout = () => {
   const location = useLocation();
@@ -26,51 +27,53 @@ export const MainLayout = () => {
 
   return (
     <CartProvider>
-      <div className="min-h-screen bg-white font-sans selection:bg-black selection:text-white">
-        <LightWaves />
-        <Header 
-          onOpenCart={() => setIsCartOpen(true)} 
-          onSelectProduct={setSearchSelectedProduct}
-        />
-        
-        <div className="flex">
-          {isStudio ? (
-            <StudioCategoryProvider>
-              <StudioSidebar />
-              <main className="flex-1">
-                <Outlet />
-              </main>
-            </StudioCategoryProvider>
-          ) : (
-            <>
-              <Sidebar />
-              <main className="flex-1">
-                <Outlet />
-              </main>
-            </>
-          )}
+      <StudioCategoryProvider>
+        <div className="min-h-screen bg-white font-sans selection:bg-black selection:text-white">
+          <ProductShareMeta />
+          <LightWaves />
+          <Header 
+            onOpenCart={() => setIsCartOpen(true)} 
+            onSelectProduct={setSearchSelectedProduct}
+          />
+          
+          <div className="flex">
+            {isStudio ? (
+              <>
+                <StudioSidebar />
+                <main className="flex-1">
+                  <Outlet />
+                </main>
+              </>
+            ) : (
+              <>
+                <Sidebar />
+                <main className="flex-1">
+                  <Outlet />
+                </main>
+              </>
+            )}
+          </div>
+
+          <Footer />
+
+          <CartDrawer
+            isOpen={isCartOpen}
+            onClose={() => setIsCartOpen(false)}
+            onCheckout={handleOpenCheckout}
+          />
+
+          <CheckoutModal
+            isOpen={isCheckoutOpen}
+            onClose={() => setIsCheckoutOpen(false)}
+          />
+
+          <ProductDetail
+            product={searchSelectedProduct}
+            isOpen={!!searchSelectedProduct}
+            onClose={() => setSearchSelectedProduct(null)}
+          />
         </div>
-
-        <Footer />
-
-        <CartDrawer 
-          isOpen={isCartOpen} 
-          onClose={() => setIsCartOpen(false)} 
-          onCheckout={handleOpenCheckout}
-        />
-        
-        <CheckoutModal 
-          isOpen={isCheckoutOpen} 
-          onClose={() => setIsCheckoutOpen(false)} 
-        />
-
-        {/* Product detail from search */}
-        <ProductDetail 
-          product={searchSelectedProduct} 
-          isOpen={!!searchSelectedProduct} 
-          onClose={() => setSearchSelectedProduct(null)} 
-        />
-      </div>
+      </StudioCategoryProvider>
     </CartProvider>
   );
 };

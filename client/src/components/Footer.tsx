@@ -72,11 +72,12 @@ export const Footer = () => {
           <div>
             <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] mb-5 text-neutral-300">Categories</h4>
             <ul className="space-y-3 text-sm text-neutral-400">
-              <li><a href="#collection" className="hover:text-amber-400 transition-colors">Living Room</a></li>
-              <li><a href="#collection" className="hover:text-amber-400 transition-colors">Bedroom</a></li>
-              <li><a href="#collection" className="hover:text-amber-400 transition-colors">Dining</a></li>
-              <li><a href="#collection" className="hover:text-amber-400 transition-colors">Office</a></li>
-              <li><a href="#collection" className="hover:text-amber-400 transition-colors">Outdoor</a></li>
+              <li><Link to="/?category=LIVING" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-amber-400 transition-colors">Living Room</Link></li>
+              <li><Link to="/?category=BEDROOM" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-amber-400 transition-colors">Bedroom</Link></li>
+              <li><Link to="/?category=DINING" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-amber-400 transition-colors">Dining</Link></li>
+              <li><Link to="/?category=OFFICE" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-amber-400 transition-colors">Office</Link></li>
+              <li><Link to="/?category=OUTDOOR" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-amber-400 transition-colors">Outdoor</Link></li>
+              <li><Link to="/?category=DECOR" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-amber-400 transition-colors">Decor</Link></li>
             </ul>
           </div>
 
@@ -88,7 +89,7 @@ export const Footer = () => {
               <li><a href="#" className="hover:text-amber-400 transition-colors">Shipping & Returns</a></li>
               <li><a href="#" className="hover:text-amber-400 transition-colors">Order Tracking</a></li>
               <li><a href="#" className="hover:text-amber-400 transition-colors">Size Guide</a></li>
-              <li><a href="#" className="hover:text-amber-400 transition-colors">Contact Us</a></li>
+              <li><Link to="/contact" className="hover:text-amber-400 transition-colors">Contact Us</Link></li>
             </ul>
           </div>
 

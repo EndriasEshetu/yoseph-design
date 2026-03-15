@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
+  Box,
   ShoppingCart, 
   Settings, 
   LogOut, 
@@ -56,6 +57,7 @@ export const AdminLayout: React.FC = () => {
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', exact: true },
     { to: '/dashboard/products', icon: Package, label: 'Products' },
+    { to: '/dashboard/studio', icon: Box, label: 'Studio (3D Models)' },
     { to: '/dashboard/orders', icon: ShoppingCart, label: 'Orders' },
     { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
