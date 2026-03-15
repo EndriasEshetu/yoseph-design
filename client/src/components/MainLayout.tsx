@@ -2,15 +2,19 @@ import { useState } from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { Sidebar } from './Sidebar';
+import { StudioSidebar } from './StudioSidebar';
+import { StudioCategoryProvider } from '../context/StudioCategoryContext';
 import { LightWaves } from './ui/LightWaves';
 import { CartDrawer } from './CartDrawer';
 import { CheckoutModal } from './CheckoutModal';
 import { ProductDetail } from './ProductDetail';
 import { CartProvider } from '../context/CartContext';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Product } from '../data/products';
 
 export const MainLayout = () => {
+  const location = useLocation();
+  const isStudio = location.pathname === '/studio';
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [searchSelectedProduct, setSearchSelectedProduct] = useState<Product | null>(null);
@@ -30,10 +34,21 @@ export const MainLayout = () => {
         />
         
         <div className="flex">
-          <Sidebar />
-          <main className="flex-1">
-            <Outlet />
-          </main>
+          {isStudio ? (
+            <StudioCategoryProvider>
+              <StudioSidebar />
+              <main className="flex-1">
+                <Outlet />
+              </main>
+            </StudioCategoryProvider>
+          ) : (
+            <>
+              <Sidebar />
+              <main className="flex-1">
+                <Outlet />
+              </main>
+            </>
+          )}
         </div>
 
         <Footer />

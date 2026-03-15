@@ -208,7 +208,13 @@ export const Header = ({ onOpenCart, onSelectProduct }: HeaderProps) => {
             >
               <Search size={20} />
             </button>
-           
+            {/* Studio page */}
+           <Link
+              to="/studio"
+             className="p-2 text-neutral-600 hover:text-amber-500 transition-colors"
+            >
+              Studio
+            </Link>
             <button 
               onClick={onOpenCart}
               className="p-2 text-neutral-600 hover:text-black relative"
@@ -297,12 +303,12 @@ export const Header = ({ onOpenCart, onSelectProduct }: HeaderProps) => {
           >
             <div className="px-4 py-6 space-y-4">
               <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-neutral-400 mb-2">Categories</p>
-              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium">Living</a>
-              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium">Bedroom</a>
-              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium">Dining</a>
-              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium">Office</a>
-              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium">Outdoor</a>
-              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium">Decor</a>
+              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Living</a>
+              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Bedroom</a>
+              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Dining</a>
+              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Office</a>
+              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Outdoor</a>
+              <a href="#collection" onClick={() => setIsMenuOpen(false)} className="block text-sm uppercase tracking-widest font-medium text-neutral-700 hover:text-amber-500 transition-colors">Decor</a>
             </div>
           </motion.div>
         )}

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { MainLayout } from './components/MainLayout';
 import { HomePage } from './pages/HomePage';
+import { StudioPage } from './pages/StudioPage';
 import { ShopProvider } from './context/ShopContext';
 import { CartProvider } from './context/CartContext';
 
@@ -13,6 +14,7 @@ function App() {
           <Routes>
             <Route element={<MainLayout />}>
               <Route path="/" element={<HomePage />} />
+              <Route path="/studio" element={<StudioPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

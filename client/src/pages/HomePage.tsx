@@ -15,7 +15,7 @@ export const HomePage = () => {
               className="text-3xl md:text-4xl lg:text-5xl font-light italic leading-snug text-neutral-800"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
-              "Great design transforms a house into a home — where every piece tells a story and every space inspires living."
+              "Great design transforms a house into a home where every piece tells a story and every space inspires living."
             </blockquote>
             <p className="mt-10 text-sm font-medium uppercase tracking-widest text-neutral-600">Yoseph Design</p>
          </div>
